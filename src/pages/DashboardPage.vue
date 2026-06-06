@@ -19,41 +19,28 @@
         </el-space>
       </el-card>
     </div>
-
-    <el-card shadow="hover" class="recent-card">
-      <template #header>最近活动</template>
-      <el-table :data="recentLogs" stripe style="width: 100%">
-        <el-table-column prop="action" label="操作" width="120" />
-        <el-table-column prop="prop_name" label="道具" width="150" />
-        <el-table-column prop="operator" label="操作人" width="120" />
-        <el-table-column prop="detail" label="详情" />
-        <el-table-column prop="created_at" label="时间" width="180" />
-      </el-table>
-    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getDashboardStats, getRecentLogs } from '@/api/stats'
+import { getDashboardStats } from '@/api/stats'
 
 const authStore = useAuthStore()
 
 const stats = ref<Record<string, number>>({
-  pending_borrow: 0,
-  pending_return: 0,
-  missing_pending: 0,
-  pending_placement: 0,
+  totalProps: 0,
+  inStockCount: 0,
+  borrowedCount: 0,
+  missingPartsCount: 0,
 })
 
-const recentLogs = ref<any[]>([])
-
 const statCards = computed(() => [
-  { key: 'pending_borrow', label: '待借出', value: stats.value.pending_borrow, color: '#e8723a' },
-  { key: 'pending_return', label: '待回收', value: stats.value.pending_return, color: '#e6a23c' },
-  { key: 'missing_pending', label: '缺件待处理', value: stats.value.missing_pending, color: '#f56c6c' },
-  { key: 'pending_placement', label: '待归位', value: stats.value.pending_placement, color: '#1e3a5f' },
+  { key: 'totalProps', label: '道具总数', value: stats.value.totalProps, color: '#1e3a5f' },
+  { key: 'inStockCount', label: '在库', value: stats.value.inStockCount, color: '#67c23a' },
+  { key: 'borrowedCount', label: '借出中', value: stats.value.borrowedCount, color: '#e8723a' },
+  { key: 'missingPartsCount', label: '缺件', value: stats.value.missingPartsCount, color: '#f56c6c' },
 ])
 
 const actions = computed(() => {
@@ -73,12 +60,8 @@ const actions = computed(() => {
 
 onMounted(async () => {
   try {
-    const [statsRes, logsRes]: any[] = await Promise.all([
-      getDashboardStats(),
-      getRecentLogs({ limit: 5 }),
-    ])
+    const statsRes: any = await getDashboardStats()
     stats.value = statsRes
-    recentLogs.value = logsRes.list || logsRes || []
   } catch {
     // silently fail
   }

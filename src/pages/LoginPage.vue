@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="login-card">
       <h1 class="login-title">活动道具借还管理系统</h1>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="0" @submit.prevent="handleLogin">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="0">
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" size="large" prefix-icon="User" />
         </el-form-item>
@@ -10,7 +10,7 @@
           <el-input v-model="form.password" type="password" placeholder="密码" size="large" prefix-icon="Lock" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" size="large" :loading="loading" native-type="submit" class="login-btn">
+          <el-button type="primary" size="large" :loading="loading" class="login-btn" @click="handleLogin">
             登录
           </el-button>
         </el-form-item>
