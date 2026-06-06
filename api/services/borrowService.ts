@@ -121,12 +121,33 @@ export function returnProp(data: { borrow_record_id: number; operator_id: number
   return { ...record, status: 'returned' }
 }
 
-export function listRecords(filters: { status?: string; borrower_id?: number; page?: number; pageSize?: number }) {
+export function listRecords(filters: { status?: string; borrower_id?: number; overdue_status?: string; page?: number; pageSize?: number }) {
   const page = filters.page || 1
   const pageSize = filters.pageSize || 20
-  const { list, total } = borrowRepo.findAll({ ...filters, page, pageSize })
+  const { list, total } = borrowRepo.findAll({ 
+    ...filters, 
+    overdue_status: filters.overdue_status as borrowRepo.OverdueStatus | undefined,
+    page, 
+    pageSize 
+  })
 
   const enriched = list.map(r => {
+    const borrower = userRepo.findById(r.borrower_id)
+    const prop = propRepo.findById(r.prop_id)
+    const withOverdue = borrowRepo.calculateOverdueStatus(r)
+    return {
+      ...withOverdue,
+      borrower_name: borrower?.name || '',
+      prop_name: prop?.name || ''
+    }
+  })
+
+  return { list: enriched, total, page, pageSize }
+}
+
+export function getOverdueRecords(limit: number = 10) {
+  const records = borrowRepo.getOverdueRecords(limit)
+  return records.map(r => {
     const borrower = userRepo.findById(r.borrower_id)
     const prop = propRepo.findById(r.prop_id)
     return {
@@ -135,6 +156,4 @@ export function listRecords(filters: { status?: string; borrower_id?: number; pa
       prop_name: prop?.name || ''
     }
   })
-
-  return { list: enriched, total, page, pageSize }
 }

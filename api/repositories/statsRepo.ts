@@ -1,4 +1,5 @@
 import { getDb } from '../database/init.js'
+import * as borrowRepo from './borrowRepo.js'
 
 export interface DashboardStats {
   totalProps: number
@@ -9,6 +10,8 @@ export interface DashboardStats {
   pendingMissingCount: number
   todayBorrowCount: number
   todayReturnCount: number
+  overdueCount: number
+  upcomingDueCount: number
 }
 
 export function getDashboardStats(): DashboardStats {
@@ -20,6 +23,8 @@ export function getDashboardStats(): DashboardStats {
   const pendingMissingCount = (getDb().prepare("SELECT COUNT(*) as count FROM missing_records WHERE status = 'pending'").get() as { count: number }).count
   const todayBorrowCount = (getDb().prepare("SELECT COUNT(*) as count FROM borrow_records WHERE date(borrowed_at) = date('now')").get() as { count: number }).count
   const todayReturnCount = (getDb().prepare("SELECT COUNT(*) as count FROM borrow_records WHERE status = 'returned' AND date(returned_at) = date('now')").get() as { count: number }).count
+  
+  const overdueStats = borrowRepo.getOverdueStats()
 
   return {
     totalProps,
@@ -29,6 +34,8 @@ export function getDashboardStats(): DashboardStats {
     missingPartsCount,
     pendingMissingCount,
     todayBorrowCount,
-    todayReturnCount
+    todayReturnCount,
+    overdueCount: overdueStats.overdueCount,
+    upcomingDueCount: overdueStats.upcomingCount
   }
 }

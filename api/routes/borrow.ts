@@ -46,9 +46,20 @@ router.get('/records', authMiddleware, (req: Request, res: Response): void => {
     const result = borrowService.listRecords({
       status: req.query.status as string | undefined,
       borrower_id: req.query.borrower_id ? Number(req.query.borrower_id) : undefined,
+      overdue_status: req.query.overdue_status as string | undefined,
       page: req.query.page ? Number(req.query.page) : 1,
       pageSize: req.query.pageSize ? Number(req.query.pageSize) : 20
     })
+    res.json({ success: true, data: result })
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+router.get('/overdue', authMiddleware, (req: Request, res: Response): void => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 10
+    const result = borrowService.getOverdueRecords(limit)
     res.json({ success: true, data: result })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })

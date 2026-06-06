@@ -11,30 +11,55 @@
           </el-select>
         </el-col>
         <el-col :span="6">
+          <el-select v-model="filters.overdue_status" placeholder="逾期状态" clearable @change="loadRecords">
+            <el-option label="正常" value="normal" />
+            <el-option label="即将到期" value="upcoming" />
+            <el-option label="已逾期" value="overdue" />
+          </el-select>
+        </el-col>
+        <el-col :span="6">
           <el-input v-model="filters.prop_name" placeholder="道具名称" clearable @clear="loadRecords" @keyup.enter="loadRecords" />
         </el-col>
         <el-col :span="6">
           <el-input v-model="filters.borrower_name" placeholder="借用人" clearable @clear="loadRecords" @keyup.enter="loadRecords" />
         </el-col>
-        <el-col :span="6">
+      </el-row>
+      <el-row :gutter="16" class="mt-4">
+        <el-col :span="24">
           <el-button type="primary" @click="loadRecords">查询</el-button>
+          <el-button @click="resetFilters">重置</el-button>
         </el-col>
       </el-row>
     </el-card>
 
     <el-card shadow="hover">
-      <el-table :data="recordsList" stripe style="width: 100%">
+      <el-table :data="recordsList" stripe style="width: 100%" :row-class-name="tableRowClassName">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="prop_name" label="道具名" width="140" />
         <el-table-column prop="borrower_name" label="借用人" width="100" />
         <el-table-column prop="purpose" label="用途" width="150" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="借还状态" width="100">
           <template #default="{ row }">
             <el-tag :type="recordStatusType(row.status)">{{ recordStatusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="逾期状态" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.overdue_status && row.overdue_status !== 'normal'" :type="overdueStatusType(row.overdue_status)" effect="dark">
+              {{ overdueStatusLabel(row.overdue_status) }}
+              <span v-if="row.overdue_days > 0">({{ row.overdue_days }}天)</span>
+            </el-tag>
+            <span v-else class="text-gray-400">-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="borrowed_at" label="借出时间" width="170" />
-        <el-table-column prop="expected_return_at" label="预计归还" width="170" />
+        <el-table-column prop="expected_return_at" label="预计归还" width="170">
+          <template #default="{ row }">
+            <span :class="{ 'text-red-500 font-bold': row.overdue_status === 'overdue' }">
+              {{ row.expected_return_at }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column prop="returned_at" label="实际归还" width="170" />
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
@@ -50,9 +75,11 @@
 import { ref, reactive, onMounted } from 'vue'
 import { getRecords } from '@/api/borrow'
 import { ElMessageBox } from 'element-plus'
+import { overdueStatusLabel, overdueStatusType, type OverdueStatus } from '@/lib/utils'
 
 const filters = reactive({
   status: '',
+  overdue_status: '',
   prop_name: '',
   borrower_name: '',
 })
@@ -73,14 +100,33 @@ function recordStatusLabel(status: string) {
   return map[status] || status
 }
 
+function tableRowClassName({ row }: { row: any }) {
+  if (row.overdue_status === 'overdue') {
+    return 'overdue-row'
+  }
+  if (row.overdue_status === 'upcoming') {
+    return 'upcoming-row'
+  }
+  return ''
+}
+
+function resetFilters() {
+  filters.status = ''
+  filters.overdue_status = ''
+  filters.prop_name = ''
+  filters.borrower_name = ''
+  loadRecords()
+}
+
 async function loadRecords() {
   try {
     const params: Record<string, any> = {}
     if (filters.status) params.status = filters.status
+    if (filters.overdue_status) params.overdue_status = filters.overdue_status
     if (filters.prop_name) params.prop_name = filters.prop_name
     if (filters.borrower_name) params.borrower_name = filters.borrower_name
     const res: any = await getRecords(params)
-    recordsList.value = res.list || res || []
+    recordsList.value = res.data?.list || res.list || res || []
   } catch {
     // silently fail
   }
@@ -108,5 +154,29 @@ onMounted(() => {
 
 .filter-card :deep(.el-select) {
   width: 100%;
+}
+
+:deep(.overdue-row) {
+  background-color: rgba(245, 108, 108, 0.1) !important;
+}
+
+:deep(.upcoming-row) {
+  background-color: rgba(230, 162, 60, 0.1) !important;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.text-gray-400 {
+  color: #909399;
+}
+
+.text-red-500 {
+  color: #f56c6c;
+}
+
+.font-bold {
+  font-weight: 700;
 }
 </style>

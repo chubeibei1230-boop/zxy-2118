@@ -11,3 +11,7 @@ export function returnProp(data: Record<string, any>) {
 export function getRecords(params?: Record<string, any>) {
   return request.get('/borrow/records', { params })
 }
+
+export function getOverdueRecords(limit?: number) {
+  return request.get('/borrow/overdue', { params: limit ? { limit } : {} })
+}
